@@ -1,49 +1,53 @@
-# TrustFlowAudit IEEE Paper
+# TrustAuditFlow IEEE-Style Anonymous Draft
 
-本目录用于撰写“面向数据流通的 BLoP 轻量化升级：可信委员会驱动的区块链分布式数据校验方法”小论文草稿。
+This directory contains an anonymous English LaTeX draft for:
 
-## 文件结构
+> TrustAuditFlow: A Lightweight Extension of BLoP for Blockchain-Based Distributed Data Verification in Data Circulation
 
-- `main.tex`：IEEE 双栏主文件。
-- `references.bib`：参考文献条目，后续需要继续核对卷期页码。
-- `sections/`：分章节正文。
-- `build/`：编译输出目录。
+## Structure
 
-## 当前写作范围
+- `main.tex`: IEEE two-column main file.
+- `references.bib`: bibliography entries. Bibliographic metadata still needs venue-level verification before submission.
+- `sections/`: section files.
+- `build/`: generated compilation outputs.
 
-已完成：
+## Current Scope
 
-- 摘要与关键词
-- 引言
-- 相关工作
-- 问题定义与设计目标
-- 系统模型
-- TrustFlowAudit 方法
-- 安全性与开销讨论
-- 局限与未来工作
-- 结论
+Completed in this draft:
 
-暂未撰写：
+- Anonymous title block
+- Abstract and keywords
+- Introduction
+- Related work
+- Problem formulation and design goals
+- System model
+- TrustAuditFlow design
+- Security and cost analysis
+- Discussion and future work
+- Conclusion
 
-- 实验部分正文
-- 实验结果表格
-- 消融实验
-- 与 baseline 的定量对比
+Not yet completed:
 
-## 编译
+- Evaluation section
+- Experimental results
+- Ablation study
+- Quantitative comparison with baselines
+- Venue-specific formatting and artifact appendix
 
-优先使用 XeLaTeX：
+## Build
+
+Use `pdflatex` or `latexmk`:
 
 ```bash
 cd paper/TrustFlowAudit_IEEE_Paper
-latexmk -xelatex -bibtex -interaction=nonstopmode -output-directory=build main.tex
+latexmk -pdf -bibtex -interaction=nonstopmode -output-directory=build main.tex
 ```
 
-如果本机没有 `latexmk`，可使用 Codex LaTeX 编译工具或手动执行：
+Manual build:
 
 ```bash
-xelatex -output-directory=build main.tex
+pdflatex -output-directory=build main.tex
 bibtex build/main
-xelatex -output-directory=build main.tex
-xelatex -output-directory=build main.tex
+pdflatex -output-directory=build main.tex
+pdflatex -output-directory=build main.tex
 ```

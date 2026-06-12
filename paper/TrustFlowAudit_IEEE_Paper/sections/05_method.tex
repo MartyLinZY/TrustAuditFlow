@@ -1,98 +1,98 @@
-\section{TrustFlowAudit 方法}
+\section{TrustAuditFlow Design}
 
-\subsection{与 BLoP 全节点模式的关系}
+\subsection{Relationship with the BLoP Full-Node Mode}
 
-TrustFlowAudit 是 BLoP 全节点可信审计模式上的轻量化升级选项。BLoP 提供可信节点度量、异常事件监测、可信执行环境接入和 PBFT 风格链上确认流程，适合作为系统的完整可信基线。TrustFlowAudit 保留这一基线，并在其上增加分级执行策略：高风险事件、争议事件和关键状态变更仍采用全可信节点确认；中低风险、高频和可批量处理的审计事件则由可信评分选出的审计委员会确认，并通过 Merkle 批量存证减少链上写入次数。二者关系如表~\ref{tab:blop_relation} 所示。
+TrustAuditFlow is a lightweight extension of the BLoP full-node trusted audit mode. BLoP provides the trusted node set, event monitoring, trusted execution support, and PBFT-style confirmation process. TrustAuditFlow keeps this mode as the high-assurance baseline and adds a risk-aware execution policy: high-risk events, disputed events, and critical state transitions are confirmed by the full trusted node set, while routine and batchable events are confirmed by a trusted audit committee.
 
 \begin{table}[t]
 \centering
-\caption{BLoP 全节点模式与 TrustFlowAudit 轻量化升级关系}
+\caption{Relationship between the BLoP full-node mode and TrustAuditFlow.}
 \label{tab:blop_relation}
 \begin{tabular}{p{1.55cm}p{2.55cm}p{2.55cm}}
 \toprule
-维度 & BLoP 全节点模式 & TrustFlowAudit 轻量化路径 \\
+Aspect & BLoP full-node mode & TrustAuditFlow path \\
 \midrule
-确认主体 & 全部可信节点充分参与 & 可信委员会优先确认 \\
-适用事件 & 高风险、强一致、争议事件 & 高频、中低风险、可批量事件 \\
-链上内容 & 事件记录与确认状态 & 批量摘要、恢复状态、信誉变化 \\
-回退机制 & 作为默认强安全模式 & 异常时回退全节点确认 \\
+Confirmers & All trusted nodes & Trusted committee first \\
+Events & High-risk and disputed & Routine and batchable \\
+On-chain data & Event state records & Batch anchors and recovery states \\
+Fallback & Strong baseline & Falls back to full-node mode \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\subsection{总体流程}
+This relationship is important for the paper's scope. TrustAuditFlow is not a weaker substitute for BLoP. It is an additional path for events whose risk and frequency make full-node confirmation expensive relative to the value of each individual event.
 
-TrustFlowAudit 的核心流程如图~\ref{fig:workflow} 所示。系统首先对数据对象进行分片和纠删码编码，随后生成分片哈希和 Merkle 根并写入链上。审计节点按照策略抽样挑战链下分片，若发现哈希不一致或分片缺失，则触发恢复判定。当剩余有效分片数量满足恢复阈值时，系统恢复异常分片、更新承诺并记录责任；若不满足恢复阈值，或事件风险超过轻量化路径阈值，则记录不可恢复状态并回退到 BLoP 式全节点确认或外部仲裁流程。
+\subsection{Workflow}
+
+Figure~\ref{fig:workflow} shows the closed audit-recovery workflow. The data object is first sharded and erasure-coded. The system then computes shard hashes, builds a Merkle root, and anchors the object commitment on chain. Auditors sample off-chain shards according to the policy. If a challenged shard is missing, stale, or inconsistent with its commitment, the system records an anomaly and checks whether enough valid shards remain for recovery. If recovery succeeds, the object commitment and the responsible node state are updated. If recovery is impossible or the event is high risk, the event falls back to full-node confirmation or external arbitration.
 
 \begin{figure}[t]
 \centering
 \begin{tikzpicture}[
   node distance=0.37cm,
-  step/.style={draw, rounded corners, align=center, minimum width=6.7cm, minimum height=0.48cm, font=\scriptsize},
+  flowstep/.style={draw, rounded corners, align=center, minimum width=6.7cm, minimum height=0.48cm, font=\scriptsize},
   arrow/.style={-{Latex[length=1.8mm]}, thick}
 ]
-\node[step] (s1) {分片存储与纠删码编码};
-\node[step, below=of s1] (s2) {生成分片哈希、Merkle 根与链上承诺};
-\node[step, below=of s2] (s3) {按审计策略抽样挑战链下分片};
-\node[step, below=of s3] (s4) {发现异常并判断是否满足恢复阈值};
-\node[step, below=of s4] (s5) {恢复分片、更新承诺与证据摘要};
-\node[step, below=of s5] (s6) {可信委员会确认或回退全节点确认};
+\node[flowstep] (s1) {Shard storage and erasure coding};
+\node[flowstep, below=of s1] (s2) {Merkle commitment and on-chain object state};
+\node[flowstep, below=of s2] (s3) {Policy-driven sampled audit challenge};
+\node[flowstep, below=of s3] (s4) {Anomaly detection and recovery threshold check};
+\node[flowstep, below=of s4] (s5) {Shard recovery and commitment update};
+\node[flowstep, below=of s5] (s6) {Committee confirmation or full-node fallback};
 \draw[arrow] (s1) -- (s2);
 \draw[arrow] (s2) -- (s3);
 \draw[arrow] (s3) -- (s4);
 \draw[arrow] (s4) -- (s5);
 \draw[arrow] (s5) -- (s6);
 \end{tikzpicture}
-\caption{审计恢复闭环流程}
+\caption{Closed audit-recovery workflow.}
 \label{fig:workflow}
 \end{figure}
 
-\subsection{可信评分与委员会选择}
+\subsection{Trust Score and Committee Selection}
 
-BLoP 类方案强调通过可信计算、可信代理和事件监测维护可信节点集合。TrustFlowAudit 直接复用这一可信节点集合思想，并将其进一步用于轻量化委员会选择。本文在不引入 TPM/TEE 的短周期原型中，将该思想抽象为软件可信评分。设节点 $v_i$ 的可信评分为：
+BLoP maintains a trusted node set through trusted computing and monitoring. TrustAuditFlow reuses this idea and converts it into a committee-selection rule. In the current prototype-level design, the trust score of node $v_i$ is modeled as
 \begin{equation}
   T_i = \alpha A_i + \beta C_i + \gamma P_i,
 \end{equation}
-其中 $A_i$ 表示节点注册、配置和运行状态的可信度量，$C_i$ 表示历史审计和异常事件形成的信用分，$P_i$ 表示资源状态和可用性，且 $\alpha+\beta+\gamma=1$。
+where $A_i$ represents attestation or configuration status, $C_i$ represents historical audit behavior and credit events, and $P_i$ represents resource availability. The weights satisfy $\alpha+\beta+\gamma=1$.
 
-系统首先过滤低于阈值 $\theta$ 的节点，得到可信候选集合 $V_T$。随后根据数据对象风险等级、审计频率和容错要求选择委员会 $C \subseteq V_T$。若系统容忍 $f$ 个拜占庭节点，则委员会中可用投票节点数应满足：
+Nodes below a threshold $\theta$ are excluded from the candidate set $V_T$. For a data object with policy $policy_D$, the system selects a committee $C \subseteq V_T$ according to risk level, audit frequency, and fault tolerance. If the committee tolerates $f$ Byzantine nodes, the number of available voting nodes must satisfy
 \begin{equation}
   |C_{avail}| \geq 2f+1.
 \end{equation}
-与 BLoP 式全可信节点参与确认相比，委员会机制减少中低风险审计事件每次确认需要参与的节点数量。为避免固定委员会长期被攻击，委员会选择可使用链上随机源、最近区块哈希或可验证随机函数作为种子，并结合信誉权重进行周期性重选。若委员会规模不足、可信分低于阈值或事件被标记为高风险，系统不继续走轻量路径，而是回退到全可信节点确认。
+If this condition fails, or if the object is marked high risk, the event is not processed by the lightweight path and is instead escalated to full-node confirmation.
 
-\subsection{分级批量存证}
+\subsection{Risk-Aware Batch Anchoring}
 
-高频审计场景中，若每个审计事件都单独写链，会造成链上记录膨胀。TrustFlowAudit 将审计事件分为低风险事件和高风险事件。低风险事件在链下形成事件列表，并以固定批次大小 $b$ 构造 Merkle 根后写链；高风险事件则采用更小批次、即时写链或直接回退 BLoP 全节点确认，以保证关键异常仍然获得充分确认。
+TrustAuditFlow distinguishes between routine events and high-risk events. Routine events are stored off chain as an ordered event list. For every batch of size $b$, the system builds a Merkle root and writes one anchor to the chain. High-risk events use smaller batches, immediate anchoring, or full-node fallback.
 
-设一个审计周期内事件数为 $n$，批次大小为 $b$，则链上记录数可由 $n$ 降为：
+For $n$ routine events and batch size $b$, the number of routine chain records becomes
 \begin{equation}
   N_{chain} = \left\lceil \frac{n}{b} \right\rceil + N_{high},
 \end{equation}
-其中 $N_{high}$ 表示需要单独确认的高风险事件数量。该策略不改变链下证据完整性，但将链上存储压力从事件级记录转化为批量摘要记录。
+where $N_{high}$ is the number of high-risk events requiring separate handling. The goal is not to hide evidence, but to move detailed evidence off chain while preserving a verifiable on-chain digest.
 
-\subsection{抽样审计与异常发现}
+\subsection{Sampled Audit and Anomaly Generation}
 
-审计节点根据链上策略生成挑战集合 $Q=\{q_1,\ldots,q_r\}$，其中 $r$ 由抽样比例决定。对于每个被挑战分片 $s_i$，存储节点返回分片或证明摘要，审计节点计算 $H(s_i)$ 并与承诺中的叶子哈希或 Merkle 证明比较。若验证失败，则生成异常事件：
+Given an audit policy, an auditor samples a challenge set $Q=\{q_1,\ldots,q_r\}$. For each challenged shard $s_i$, the storage node returns the shard, a digest, or a proof object depending on the verification module. In the current design, hash checking is used as a placeholder for the integrity check. A later revision can replace it with PDP/PoR verification.
+
+If verification fails, the auditor emits an anomaly event
 \begin{equation}
-  e = \langle id_D,i,v_i,type,t,proof\rangle,
+  e = \langle id_D, i, v_i, type, t, proof \rangle,
 \end{equation}
-其中 $type$ 表示分片缺失、哈希不一致、响应超时或证据不完整，$proof$ 表示链下保存的验证材料摘要。
+where $type$ denotes missing shard, hash mismatch, timeout, stale response, or incomplete evidence. The event is appended to the off-chain hash chain and included in the next anchoring decision.
 
-本文当前原型采用哈希校验模拟完整性验证；在后续工作中，可将该模块替换为 PDP/PoR 证明生成与验证模块，使审计节点无需读取完整分片即可完成公开校验。
+\subsection{Erasure-Code Recovery and Trust Update}
 
-\subsection{纠删码恢复与信誉更新}
+When an anomaly set $F$ is detected, the system checks whether the remaining valid shards satisfy the recovery threshold. For a $(k,m)$ erasure-code configuration, the object is recoverable if at least $k$ valid shards remain. If recovery succeeds, the system regenerates the damaged shard, recomputes the affected shard hashes, and updates the Merkle root. If recovery fails, the event is marked unrecoverable and escalated.
 
-当系统发现异常分片集合 $F$ 后，需要判断剩余有效分片是否满足恢复条件。对于 $(k,m)$ 纠删码，只要有效分片数量不少于 $k$，理论上即可恢复原始数据或损坏分片。若满足恢复条件，系统执行恢复并重新计算受影响分片哈希与 Merkle 根；若不满足条件，则记录不可恢复状态。
-
-恢复完成后，系统根据异常类型和恢复结果更新节点信誉：
+After recovery or failure, the responsible node trust score is updated:
 \begin{equation}
-  T_i' = T_i - \lambda_1 \cdot I_{damage} - \lambda_2 \cdot I_{timeout} + \lambda_3 \cdot I_{recovered},
+  T_i' = T_i - \lambda_1 I_{damage} - \lambda_2 I_{timeout} + \lambda_3 I_{recovered}.
 \end{equation}
-其中 $I_{damage}$、$I_{timeout}$ 和 $I_{recovered}$ 分别表示损坏、超时和协助恢复事件，$\lambda_1,\lambda_2,\lambda_3$ 为权重参数。信誉变化不只用于惩罚，也用于后续委员会选择，使审计结果反过来影响治理流程。
+Here $I_{damage}$, $I_{timeout}$, and $I_{recovered}$ represent damage, timeout, and successful recovery assistance events. This update closes the governance loop: audit outcomes influence later committee selection.
 
-\subsection{链上确认与证据锚定}
+\subsection{On-Chain Confirmation}
 
-每个审计批次最终生成一个链上 payload，包括审计摘要、异常摘要、恢复摘要、受影响节点、旧 Merkle 根、新 Merkle 根和链下证据哈希。委员会节点对 payload 执行 PBFT 风格投票，满足 quorum 后提交区块。本文将链上记录限制为摘要和状态，不把原始分片、完整证明和大体积日志放入链上。
-
-该设计与 BLoP 的可信节点治理和 PBFT 确认思想保持一致。区别在于，TrustFlowAudit 不把所有场景都固定为同一种全节点确认路径，而是在 BLoP 全节点模式之外增加轻量化选择：可批量事件由委员会确认并存证摘要，关键事件仍回退全节点确认；同时在异常后加入纠删码恢复和信誉更新，使流程从“审计记录”扩展为“审计恢复闭环”。
+Each audit batch generates an on-chain payload containing the audit summary, anomaly summary, recovery state, affected nodes, old Merkle root, new Merkle root, and off-chain evidence hash. Committee nodes vote on the payload under a PBFT-style quorum rule. A committed payload updates the object state and the node state. If the committee cannot satisfy quorum or if the event policy requires stronger assurance, the payload is sent to the full-node path.

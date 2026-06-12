@@ -1,28 +1,36 @@
-\section{问题定义与设计目标}
+\section{Problem Formulation and Design Goals}
 
-\subsection{BLoP 基础模式与升级目标}
+\subsection{BLoP Baseline and Extension Target}
 
-本文将 BLoP 作为基础可信审计模式。该模式通过可信计算、可信 Agent、异常事件监测和 PBFT 风格共识形成完整信任链，其默认假设是由可信节点集合对关键审计事件进行充分确认。对于安全等级较高、审计频率较低或责任要求极强的场景，全节点确认模式具有直接价值。本文关注的是另一个工程问题：当审计事件频率升高、链上记录数量增多、不同事件风险等级差异明显时，是否可以在不改变 BLoP 可信治理主线的前提下，增加一条轻量化执行路径，使中低风险事件通过可信委员会和批量存证完成确认，高风险事件仍可回退到全节点模式。
+This paper uses BLoP as the baseline trusted audit model. BLoP provides a full trust chain through trusted computing, trusted agents, event monitoring, and PBFT-style confirmation. Its natural operating mode is full-node confirmation: all eligible trusted nodes participate in confirming critical audit events. This is an appropriate default for high-risk data use, strong accountability requirements, and low-frequency events where assurance matters more than cost.
 
-\subsection{问题定义}
+The extension target is different. In data circulation, routine audit events may be generated continuously by data connectors, storage nodes, computation tasks, and monitoring agents. If all routine events are handled by the same full-node path, the chain records and confirmation messages may grow faster than the value of the individual events. The research question is therefore:
 
-考虑一个由多个机构参与的数据流通场景。数据提供方将数据对象切分为若干分片，并将分片或计算证据保存在链下存储节点中；审计节点周期性检查分片完整性或证据一致性；联盟链用于记录数据承诺、审计摘要、异常处理和节点信誉变化。系统希望在不暴露原始数据、不把大体积证据直接上链的前提下，完成分布式数据校验。
+\begin{quote}
+Can a BLoP-style trusted audit system support a lightweight, risk-aware path for routine events while preserving full-node confirmation for high-risk or disputed events?
+\end{quote}
 
-本文关注的问题可以表述为：在链下数据分片或审计证据可能损坏、丢失或被恶意修改的条件下，如何设计一种低链上开销的分布式校验机制，使系统能够完成异常发现、数据恢复、责任记录和信誉更新，并在联盟链中形成可追溯证据。
+\subsection{System Problem}
 
-\subsection{威胁模型}
+Consider a consortium data circulation scenario involving multiple organizations. A data owner registers a data object, splits it into shards, and stores the shards or computation evidence at off-chain nodes. Auditors periodically challenge selected shards or evidence objects. A consortium chain records commitments, audit summaries, recovery events, and trust-score updates. The system should verify data or evidence integrity without exposing plaintext data or committing bulky evidence to the chain.
 
-本文假设联盟链参与方经过准入管理，但其中部分节点可能出现故障或拜占庭行为。链下存储节点可能删除分片、返回错误分片、延迟响应或提交不一致证据；审计节点可能不按期执行审计、伪造审计状态或与存储节点合谋。联盟链共识层容忍不超过 $f$ 个拜占庭节点，并要求委员会中可投票节点数满足 $2f+1$ 的确认阈值。本文暂不处理密码学协议本身被攻破、所有高信誉节点同时合谋、可信硬件侧信道攻击和业务语义造假等强攻击。
+The problem addressed by TrustAuditFlow is to design a low-on-chain-cost verification mechanism that can detect corrupted or missing off-chain evidence, trigger recovery when possible, record responsibility, and update future node selection. The mechanism must also make clear when lightweight committee confirmation is sufficient and when full-node confirmation is required.
 
-\subsection{设计目标}
+\subsection{Threat Model}
 
-TrustFlowAudit 的设计目标包括：
+We assume a permissioned setting in which participating organizations and nodes are registered, but some nodes may be faulty or Byzantine. Off-chain storage nodes may delete shards, return stale data, delay responses, or submit inconsistent evidence. Audit nodes may omit scheduled audits, misreport audit states, or collude with storage nodes. The consortium chain tolerates up to $f$ Byzantine nodes under a PBFT-style assumption. A committee confirmation is accepted only when the available voting nodes satisfy the required quorum.
+
+The current design does not address broken cryptographic primitives, a committee fully controlled by an adaptive adversary, hardware side-channel attacks against TEEs, or business semantic fraud in the upstream data generation process. These limitations are deliberate: the paper focuses on the audit-flow and evidence-governance layer rather than claiming end-to-end semantic correctness.
+
+\subsection{Design Goals}
+
+TrustAuditFlow is designed around six goals.
 
 \begin{itemize}
-  \item \textbf{低链上开销：}链上只保存哈希承诺、Merkle 根、审计状态、恢复状态和信誉变化，不保存原始数据和大体积证明。
-  \item \textbf{过程可追溯：}审计请求、异常发现、恢复处理和节点惩罚均形成链上摘要记录，便于后续仲裁和复核。
-  \item \textbf{恢复闭环：}当损坏分片不超过纠删码恢复阈值时，系统应能触发恢复并更新新的数据承诺。
-  \item \textbf{委员会轻量确认：}基于可信评分选择小规模审计委员会，为 BLoP 全节点确认模式提供轻量化可选路径。
-  \item \textbf{可回退全节点模式：}当数据对象风险较高、委员会可信度不足或审计争议较大时，系统可以回退到 BLoP 式全可信节点确认。
-  \item \textbf{边界清晰：}本文方法不替代 BLoP 的完整可信计算链路，也不替代完整 PDP/PoR 密码学协议；这些能力可作为基础能力或后续扩展模块接入。
+  \item \textbf{Low on-chain cost.} The chain stores commitments, Merkle roots, audit states, recovery states, and trust updates, not raw data or large proofs.
+  \item \textbf{Traceable process.} Audit requests, anomaly detection, recovery actions, and node penalties must be anchored in a tamper-evident timeline.
+  \item \textbf{Recovery closure.} When the number of damaged shards is within the erasure-code recovery threshold, an audit failure should trigger recovery and commitment update instead of only returning failure.
+  \item \textbf{Lightweight committee confirmation.} A trust-score-driven committee confirms routine events as an optional path above the BLoP trusted node set.
+  \item \textbf{Full-node fallback.} High-risk objects, insufficient committee trust, or disputed audit events fall back to BLoP-style full-node confirmation.
+  \item \textbf{Explicit evidence boundary.} TrustAuditFlow does not replace BLoP's trusted computing layer or PDP/PoR cryptographic protocols; it organizes how those components can be anchored, confirmed, and linked to recovery.
 \end{itemize}

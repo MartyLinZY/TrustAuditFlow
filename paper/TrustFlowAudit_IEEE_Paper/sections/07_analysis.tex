@@ -1,19 +1,23 @@
-\section{安全性与开销分析}
+\section{Security and Cost Analysis}
 
-\subsection{不可篡改性与可追溯性}
+\subsection{Tamper Evidence and Traceability}
 
-TrustFlowAudit 通过两类哈希结构提供证据可追溯性。第一，分片哈希构成 Merkle 根，链上保存根哈希后，任一分片修改都会导致叶子哈希和路径验证失败。第二，审计事件在链下按哈希链组织，链上周期性锚定哈希链状态或批量 Merkle 根，能够发现链下日志被插入、删除或修改的情况。由于联盟链记录具有共识确认，已经提交的审计摘要、恢复状态和信誉变化难以被单方篡改。
+TrustAuditFlow uses two hash structures for traceability. First, shard hashes form a Merkle root. Once the root is anchored on chain, any later modification of a shard changes the corresponding leaf and invalidates the Merkle path. Second, audit events are ordered by a hash chain. If an attacker deletes, inserts, or modifies off-chain events after an anchor is committed, the recomputed hash-chain state will not match the anchored state.
 
-\subsection{审计委员会的安全边界}
+This does not make off-chain evidence magically available. The evidence store must still preserve the raw audit materials. The contribution here is that the chain can detect inconsistency between the preserved evidence and the committed timeline.
 
-委员会机制降低了中低风险事件的确认开销，但也引入委员会选择风险。如果攻击者能够长期控制委员会多数节点，则可能伪造审计摘要或拒绝确认异常事件。因此，委员会选择必须满足三个条件：其一，候选节点需要经过可信评分过滤；其二，委员会需要周期性重选，避免固定节点长期垄断；其三，高风险数据对象必须提高委员会规模或回退 BLoP 式全可信节点复核。本文方法适合联盟链准入明确、节点身份可追溯的场景，不适合开放匿名网络。
+\subsection{Committee Safety Boundary}
 
-\subsection{链上开销}
+The committee path reduces routine confirmation cost, but it also introduces selection risk. If an adversary controls a committee majority for a target object, the committee could delay or approve a false audit summary. TrustAuditFlow handles this risk by using the committee only as a lightweight path: committee candidates must pass the trust threshold, committee membership should be rotated, high-risk events use larger committees or full-node confirmation, and any quorum failure triggers fallback.
 
-链上开销主要来自审计 payload 数量、payload 大小和共识确认延迟。分级批量存证将低风险事件从逐条上链转化为批量摘要上链，可以减少链上记录数；可信委员会减少每次确认参与节点数量，可以降低 PBFT 风格投票的通信压力；纠删码证据存储降低链下证据冗余，相比多副本策略更适合大规模审计日志保存。
+Therefore, the security claim is limited. TrustAuditFlow does not claim that a small committee is as strong as the full BLoP trusted node set. It claims that the committee is a configurable optimization for routine events under explicit fallback rules.
 
-需要注意的是，本文当前分析是方法层面的定性分析。不同联盟链平台、节点规模、网络延迟和智能合约实现会显著影响实际性能。因此，最终论文仍需要在统一实验环境下比较 BLoP 式全可信节点 PBFT、Merkle 批量存证、可信委员会和 TrustFlowAudit 全量优化四类策略。其中 BLoP 式全可信节点 PBFT 应作为强安全基线。
+\subsection{On-Chain Cost}
 
-\subsection{与 PDP/PoR 的关系}
+The on-chain cost comes from payload count, payload size, and consensus confirmation. Batch anchoring reduces the number of records for routine events. Committee confirmation reduces the number of voting nodes for routine events. Erasure coding reduces the redundancy needed to preserve recoverable evidence compared with naive replication.
 
-TrustFlowAudit 不替代 PDP/PoR，而是为其提供链上治理和闭环执行框架。PDP/PoR 负责证明远程数据持有性或可恢复性，TrustFlowAudit 负责把挑战策略、证明摘要、异常处理、恢复状态和责任记录组织为可追溯流程。当前原型用哈希抽样代替 PDP/PoR，是为了先验证系统流程；后续可以将哈希校验模块替换为公开可验证的 PDP/PoR 证明，从而提高密码学强度。
+These statements are design-level expectations, not empirical claims. The final paper still needs a controlled evaluation comparing at least four strategies: BLoP-style full-node PBFT, full-node PBFT with Merkle batch anchoring, committee confirmation without recovery closure, and TrustAuditFlow with committee confirmation plus recovery closure.
+
+\subsection{Relation to PDP and PoR}
+
+TrustAuditFlow does not replace PDP or PoR. PDP/PoR protocols prove possession or retrievability; TrustAuditFlow organizes how the challenge policy, proof summary, anomaly state, recovery result, and accountability record are anchored and confirmed. The current prototype-level hash check is useful for workflow validation, but a stronger paper version should replace it with public PDP/PoR verification or a zero-knowledge proof module.

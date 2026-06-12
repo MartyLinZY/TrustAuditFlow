@@ -1,16 +1,20 @@
-\section{系统模型}
+\section{System Model}
 
-\subsection{参与实体}
+\subsection{Participants}
 
-系统包含五类实体。
+TrustAuditFlow includes five roles.
 
-\textbf{数据提供方}负责注册数据对象、生成分片、计算哈希承诺和设置审计策略。\textbf{链下存储节点}保存数据分片、校验分片或计算证据，并响应审计挑战。\textbf{审计节点}发起抽样挑战，检查分片哈希或证明结果，并提交审计摘要。\textbf{审计委员会}由高可信节点组成，负责对审计摘要、恢复状态和信誉变化进行联盟链确认。\textbf{联盟链}保存数据对象状态、Merkle 根、哈希链锚点、恢复事件和节点信誉。
+\textbf{Data owner.} The data owner registers a data object, defines the audit policy, and generates initial commitments.
+\textbf{Off-chain storage nodes.} These nodes store data shards, parity shards, or computation evidence, and respond to audit challenges.
+\textbf{Auditors.} Auditors sample shards or evidence objects, check hashes or proof outputs, and submit audit summaries.
+\textbf{Audit committee.} A committee is selected from trusted nodes and confirms routine audit summaries, recovery states, and trust-score updates.
+\textbf{Consortium chain.} The chain stores object states, Merkle roots, hash-chain anchors, recovery events, and node trust states.
 
-\subsection{链上链下分工}
+\subsection{On-Chain and Off-Chain Boundary}
 
-TrustFlowAudit 采用链下计算加链上存证的分层结构。链下层负责数据切片、纠删码编码、分片保存、抽样校验、异常恢复和完整证据保存；链上层负责保存不可篡改的摘要证据，包括数据对象标识、编码参数、分片 Merkle 根、审计批次摘要、恢复状态和信誉变化。
+The system follows an off-chain computation and on-chain anchoring design. Off chain, nodes perform sharding, erasure coding, local storage, sampled checking, recovery, and full evidence retention. On chain, the system records compact evidence: object identifiers, coding parameters, Merkle roots, batch audit summaries, recovery states, and trust-score updates.
 
-图~\ref{fig:architecture} 给出系统架构。该架构强调链上不直接承担高频证明计算，而是作为可信时间线和责任账本使用。
+Figure~\ref{fig:architecture} illustrates this separation. The chain is not used as a high-frequency proof executor. It serves as a trusted timeline, a state anchor, and an accountability ledger.
 
 \begin{figure}[t]
 \centering
@@ -20,12 +24,12 @@ TrustFlowAudit 采用链下计算加链上存证的分层结构。链下层负�
   wide/.style={draw, rounded corners, align=center, minimum width=6.8cm, minimum height=0.75cm, font=\footnotesize},
   arrow/.style={-{Latex[length=2mm]}, thick}
 ]
-\node[box] (owner) {数据提供方};
-\node[box, right=0.5cm of owner] (storage) {链下存储节点};
-\node[box, right=0.5cm of storage] (auditor) {审计节点};
-\node[wide, below=0.65cm of storage] (offchain) {链下层：分片、哈希校验、纠删码恢复、证据保存};
-\node[wide, below=0.65cm of offchain] (onchain) {链上层：Merkle 根、审计摘要、恢复状态、信誉更新};
-\node[box, below=0.65cm of onchain] (committee) {可信审计委员会};
+\node[box] (owner) {Data owner};
+\node[box, right=0.5cm of owner] (storage) {Off-chain\\storage};
+\node[box, right=0.5cm of storage] (auditor) {Auditor};
+\node[wide, below=0.65cm of storage] (offchain) {Off-chain layer: sharding, checking, recovery, evidence storage};
+\node[wide, below=0.65cm of offchain] (onchain) {On-chain layer: Merkle roots, audit summaries, recovery states};
+\node[box, below=0.65cm of onchain] (committee) {Audit committee};
 \draw[arrow] (owner) -- (storage);
 \draw[arrow] (storage) -- (auditor);
 \draw[arrow] (owner) -- (offchain);
@@ -34,16 +38,20 @@ TrustFlowAudit 采用链下计算加链上存证的分层结构。链下层负�
 \draw[arrow] (offchain) -- (onchain);
 \draw[arrow] (committee) -- (onchain);
 \end{tikzpicture}
-\caption{TrustFlowAudit 链下计算与链上存证架构}
+\caption{TrustAuditFlow architecture: off-chain verification and on-chain anchoring.}
 \label{fig:architecture}
 \end{figure}
 
-\subsection{数据对象与承诺}
+\subsection{Objects and Commitments}
 
-设数据对象 $D$ 被切分为 $k$ 个数据分片，并生成 $m$ 个校验分片。每个分片 $s_i$ 的哈希记为 $h_i=H(s_i)$。系统根据所有分片哈希构造 Merkle 根 $R_D$，并将 $\langle id_D,k,m,R_D,policy\rangle$ 写入链上状态，其中 $policy$ 表示抽样比例、审计周期、风险等级和恢复策略。
-
-链下证据按照哈希链组织。对于审计事件 $e_t$，系统计算：
+Let a data object $D$ be encoded into $k$ data shards and $m$ parity shards. The hash of shard $s_i$ is $h_i=H(s_i)$. The system builds a Merkle tree over all shard hashes and obtains a root $R_D$. The on-chain object state stores
 \begin{equation}
-  c_t = H(c_{t-1} \parallel e_t),
+  \langle id_D, k, m, R_D, policy \rangle,
 \end{equation}
-其中 $c_t$ 是第 $t$ 个事件后的哈希链状态。链上只需要周期性保存 $c_t$ 或其批量 Merkle 根，即可证明链下证据序列未被无痕修改。
+where $policy$ contains the sampling rate, audit interval, risk level, committee size, and recovery rule.
+
+Off-chain audit evidence is organized as a hash chain. For an audit event $e_t$, the chain state is
+\begin{equation}
+  c_t = H(c_{t-1} \parallel e_t).
+\end{equation}
+The chain periodically anchors $c_t$ or a batch Merkle root of events. This makes later deletion or modification of off-chain evidence detectable as long as the anchored state remains available.
