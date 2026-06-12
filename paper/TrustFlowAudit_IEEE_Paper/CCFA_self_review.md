@@ -33,10 +33,10 @@ Reason: the draft is now anonymous and English, and the problem framing is much 
    - CCF-A-level systems/security papers normally need quantitative results, baselines, ablations, and reproducibility details.
    - Required next step: add experiments comparing at least BLoP-style full-node PBFT, Merkle batch anchoring, committee confirmation, and TrustAuditFlow full path.
 
-2. Bibliography is not submission-grade.
-   - `references.bib` still contains `BLoP Authors` and metadata marked for verification.
-   - Several entries need DOI/venue/year/page verification before submission.
-   - Required next step: verify all citations against DBLP, ACM DL, IEEE Xplore, USENIX, Springer, or publisher pages.
+2. Bibliography is improved but not submission-grade.
+   - Current `references.bib` entries were exported from the local Zotero library and local `file` paths were removed.
+   - The BLoP paper was not found in Zotero, so its placeholder BibTeX entry was removed from the draft.
+   - Required next step: import the BLoP paper into Zotero, export it through the same workflow, and verify all citations against DBLP, ACM DL, IEEE Xplore, USENIX, Springer, or publisher pages.
 
 3. Method is not yet reproducible enough.
    - The current design defines components and equations, but lacks algorithm blocks, protocol messages, parameter tables, failure-handling pseudocode, and complexity analysis.
@@ -114,7 +114,7 @@ Suggested wording: "The draft has a clearer CCF-A-oriented structure but is not 
 
 1. Select the target venue.
 2. Convert to the exact venue template and anonymity policy.
-3. Verify all references and replace the BLoP placeholder.
+3. Verify all references and import the BLoP paper into Zotero before citing it.
 4. Add algorithms and complexity analysis.
 5. Add evaluation with baselines, ablations, metrics, and reproducibility notes.
 6. Add artifact/ethics/open-science statements if required by the target venue.
