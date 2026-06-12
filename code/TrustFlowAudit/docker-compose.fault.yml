@@ -1,0 +1,12 @@
+services:
+  runner:
+    command: python3 src/consortium_runner.py --config config/consortium_fault_experiment.json --output-dir container_results_fault
+    volumes:
+      - ./container_results_fault:/app/container_results_fault
+
+  audit-runner:
+    command: >
+      sh -c "python3 src/trust_flow_audit.py --config config/blop_simulation.json --results-dir audit_work/results --reports-dir audit_work/reports &&
+      python3 src/audit_chain_runner.py --config config/consortium_fault_experiment.json --simulation-results audit_work/results/results.json --artifact-path audit_work/reports/BLoP复现与TrustFlowAudit优化报告.md --output-dir container_audit_results_fault"
+    volumes:
+      - ./container_audit_results_fault:/app/container_audit_results_fault

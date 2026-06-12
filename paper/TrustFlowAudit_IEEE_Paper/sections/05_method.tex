@@ -1,0 +1,98 @@
+\section{TrustFlowAudit 方法}
+
+\subsection{与 BLoP 全节点模式的关系}
+
+TrustFlowAudit 是 BLoP 全节点可信审计模式上的轻量化升级选项。BLoP 提供可信节点度量、异常事件监测、可信执行环境接入和 PBFT 风格链上确认流程，适合作为系统的完整可信基线。TrustFlowAudit 保留这一基线，并在其上增加分级执行策略：高风险事件、争议事件和关键状态变更仍采用全可信节点确认；中低风险、高频和可批量处理的审计事件则由可信评分选出的审计委员会确认，并通过 Merkle 批量存证减少链上写入次数。二者关系如表~\ref{tab:blop_relation} 所示。
+
+\begin{table}[t]
+\centering
+\caption{BLoP 全节点模式与 TrustFlowAudit 轻量化升级关系}
+\label{tab:blop_relation}
+\begin{tabular}{p{1.55cm}p{2.55cm}p{2.55cm}}
+\toprule
+维度 & BLoP 全节点模式 & TrustFlowAudit 轻量化路径 \\
+\midrule
+确认主体 & 全部可信节点充分参与 & 可信委员会优先确认 \\
+适用事件 & 高风险、强一致、争议事件 & 高频、中低风险、可批量事件 \\
+链上内容 & 事件记录与确认状态 & 批量摘要、恢复状态、信誉变化 \\
+回退机制 & 作为默认强安全模式 & 异常时回退全节点确认 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{总体流程}
+
+TrustFlowAudit 的核心流程如图~\ref{fig:workflow} 所示。系统首先对数据对象进行分片和纠删码编码，随后生成分片哈希和 Merkle 根并写入链上。审计节点按照策略抽样挑战链下分片，若发现哈希不一致或分片缺失，则触发恢复判定。当剩余有效分片数量满足恢复阈值时，系统恢复异常分片、更新承诺并记录责任；若不满足恢复阈值，或事件风险超过轻量化路径阈值，则记录不可恢复状态并回退到 BLoP 式全节点确认或外部仲裁流程。
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  node distance=0.37cm,
+  step/.style={draw, rounded corners, align=center, minimum width=6.7cm, minimum height=0.48cm, font=\scriptsize},
+  arrow/.style={-{Latex[length=1.8mm]}, thick}
+]
+\node[step] (s1) {分片存储与纠删码编码};
+\node[step, below=of s1] (s2) {生成分片哈希、Merkle 根与链上承诺};
+\node[step, below=of s2] (s3) {按审计策略抽样挑战链下分片};
+\node[step, below=of s3] (s4) {发现异常并判断是否满足恢复阈值};
+\node[step, below=of s4] (s5) {恢复分片、更新承诺与证据摘要};
+\node[step, below=of s5] (s6) {可信委员会确认或回退全节点确认};
+\draw[arrow] (s1) -- (s2);
+\draw[arrow] (s2) -- (s3);
+\draw[arrow] (s3) -- (s4);
+\draw[arrow] (s4) -- (s5);
+\draw[arrow] (s5) -- (s6);
+\end{tikzpicture}
+\caption{审计恢复闭环流程}
+\label{fig:workflow}
+\end{figure}
+
+\subsection{可信评分与委员会选择}
+
+BLoP 类方案强调通过可信计算、可信代理和事件监测维护可信节点集合。TrustFlowAudit 直接复用这一可信节点集合思想，并将其进一步用于轻量化委员会选择。本文在不引入 TPM/TEE 的短周期原型中，将该思想抽象为软件可信评分。设节点 $v_i$ 的可信评分为：
+\begin{equation}
+  T_i = \alpha A_i + \beta C_i + \gamma P_i,
+\end{equation}
+其中 $A_i$ 表示节点注册、配置和运行状态的可信度量，$C_i$ 表示历史审计和异常事件形成的信用分，$P_i$ 表示资源状态和可用性，且 $\alpha+\beta+\gamma=1$。
+
+系统首先过滤低于阈值 $\theta$ 的节点，得到可信候选集合 $V_T$。随后根据数据对象风险等级、审计频率和容错要求选择委员会 $C \subseteq V_T$。若系统容忍 $f$ 个拜占庭节点，则委员会中可用投票节点数应满足：
+\begin{equation}
+  |C_{avail}| \geq 2f+1.
+\end{equation}
+与 BLoP 式全可信节点参与确认相比，委员会机制减少中低风险审计事件每次确认需要参与的节点数量。为避免固定委员会长期被攻击，委员会选择可使用链上随机源、最近区块哈希或可验证随机函数作为种子，并结合信誉权重进行周期性重选。若委员会规模不足、可信分低于阈值或事件被标记为高风险，系统不继续走轻量路径，而是回退到全可信节点确认。
+
+\subsection{分级批量存证}
+
+高频审计场景中，若每个审计事件都单独写链，会造成链上记录膨胀。TrustFlowAudit 将审计事件分为低风险事件和高风险事件。低风险事件在链下形成事件列表，并以固定批次大小 $b$ 构造 Merkle 根后写链；高风险事件则采用更小批次、即时写链或直接回退 BLoP 全节点确认，以保证关键异常仍然获得充分确认。
+
+设一个审计周期内事件数为 $n$，批次大小为 $b$，则链上记录数可由 $n$ 降为：
+\begin{equation}
+  N_{chain} = \left\lceil \frac{n}{b} \right\rceil + N_{high},
+\end{equation}
+其中 $N_{high}$ 表示需要单独确认的高风险事件数量。该策略不改变链下证据完整性，但将链上存储压力从事件级记录转化为批量摘要记录。
+
+\subsection{抽样审计与异常发现}
+
+审计节点根据链上策略生成挑战集合 $Q=\{q_1,\ldots,q_r\}$，其中 $r$ 由抽样比例决定。对于每个被挑战分片 $s_i$，存储节点返回分片或证明摘要，审计节点计算 $H(s_i)$ 并与承诺中的叶子哈希或 Merkle 证明比较。若验证失败，则生成异常事件：
+\begin{equation}
+  e = \langle id_D,i,v_i,type,t,proof\rangle,
+\end{equation}
+其中 $type$ 表示分片缺失、哈希不一致、响应超时或证据不完整，$proof$ 表示链下保存的验证材料摘要。
+
+本文当前原型采用哈希校验模拟完整性验证；在后续工作中，可将该模块替换为 PDP/PoR 证明生成与验证模块，使审计节点无需读取完整分片即可完成公开校验。
+
+\subsection{纠删码恢复与信誉更新}
+
+当系统发现异常分片集合 $F$ 后，需要判断剩余有效分片是否满足恢复条件。对于 $(k,m)$ 纠删码，只要有效分片数量不少于 $k$，理论上即可恢复原始数据或损坏分片。若满足恢复条件，系统执行恢复并重新计算受影响分片哈希与 Merkle 根；若不满足条件，则记录不可恢复状态。
+
+恢复完成后，系统根据异常类型和恢复结果更新节点信誉：
+\begin{equation}
+  T_i' = T_i - \lambda_1 \cdot I_{damage} - \lambda_2 \cdot I_{timeout} + \lambda_3 \cdot I_{recovered},
+\end{equation}
+其中 $I_{damage}$、$I_{timeout}$ 和 $I_{recovered}$ 分别表示损坏、超时和协助恢复事件，$\lambda_1,\lambda_2,\lambda_3$ 为权重参数。信誉变化不只用于惩罚，也用于后续委员会选择，使审计结果反过来影响治理流程。
+
+\subsection{链上确认与证据锚定}
+
+每个审计批次最终生成一个链上 payload，包括审计摘要、异常摘要、恢复摘要、受影响节点、旧 Merkle 根、新 Merkle 根和链下证据哈希。委员会节点对 payload 执行 PBFT 风格投票，满足 quorum 后提交区块。本文将链上记录限制为摘要和状态，不把原始分片、完整证明和大体积日志放入链上。
+
+该设计与 BLoP 的可信节点治理和 PBFT 确认思想保持一致。区别在于，TrustFlowAudit 不把所有场景都固定为同一种全节点确认路径，而是在 BLoP 全节点模式之外增加轻量化选择：可批量事件由委员会确认并存证摘要，关键事件仍回退全节点确认；同时在异常后加入纠删码恢复和信誉更新，使流程从“审计记录”扩展为“审计恢复闭环”。

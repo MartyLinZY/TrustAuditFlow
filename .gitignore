@@ -1,0 +1,51 @@
+# macOS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+
+# Local data and generated outputs
+data/
+MNIST/
+results/
+experiments/
+container_results/
+container_results_*/
+container_audit_results/
+container_audit_results_*/
+logs/
+tmp/
+
+# LaTeX outputs
+build/
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+
+# Secrets
+*.key
+*.pem
+*.env
+.env
+.env.*
+
+# Runtime
+*.pid

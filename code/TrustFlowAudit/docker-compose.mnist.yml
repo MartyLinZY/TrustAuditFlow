@@ -1,0 +1,8 @@
+services:
+  runner:
+    command: python3 src/consortium_runner.py --config config/consortium_mnist_experiment.json --output-dir container_results_mnist
+    volumes:
+      - ./container_results_mnist:/app/container_results_mnist
+      - ./config:/app/config:ro
+      - ./src:/app/src:ro
+      - ./data:/app/data:ro

@@ -1,0 +1,8 @@
+services:
+  runner:
+    command: python3 src/consortium_runner.py --config config/consortium_mnist_fault_experiment.json --output-dir container_results_mnist_fault
+    volumes:
+      - ./container_results_mnist_fault:/app/container_results_mnist_fault
+      - ./config:/app/config:ro
+      - ./src:/app/src:ro
+      - ./data:/app/data:ro

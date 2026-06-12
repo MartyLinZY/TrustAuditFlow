@@ -1,0 +1,39 @@
+{
+  "seed": 20260605,
+  "node_registry_path": "/trustflowaudit/nodes",
+  "trust_threshold": 70.0,
+  "required_nodes": 4,
+  "fault_tolerance": 1,
+  "dry_run_trust_scores": [96.0, 93.0, 91.0, 88.0],
+  "fault_injection": {
+    "unavailable_nodes": ["node4", "dry-node-4"],
+    "reason": "simulated_node_leave_or_failure"
+  },
+  "dataset": {
+    "mode": "mnist",
+    "mnist_npz": "data/mnist.npz",
+    "train_samples": 60000,
+    "test_samples": 10000,
+    "feature_dim": 784,
+    "classes": 10,
+    "participants": 10,
+    "iid": true
+  },
+  "federated_learning": {
+    "rounds": 30,
+    "local_batch_size": 64,
+    "learning_rate": 0.05,
+    "epsilon": 4.0,
+    "quality_weight_beta": 0.6,
+    "time_decay_beta": 8.0,
+    "malicious_update_round": 17
+  },
+  "chain": {
+    "block_batch_size": 1,
+    "high_risk_quality_floor": 0.35
+  },
+  "reference": {
+    "paper": "高胜, 袁丽萍, 朱建明, 马鑫迪, 章睿, 马建峰. 一种基于区块链的隐私保护异步联邦学习. 中国科学: 信息科学, 2021, 51: 1755-1774.",
+    "dataset_note": "本次使用真实 MNIST：60000 训练样本、10000 测试样本，并随机平分为 10 个互不相交子集。"
+  }
+}

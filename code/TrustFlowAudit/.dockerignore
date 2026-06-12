@@ -1,0 +1,21 @@
+.git
+.DS_Store
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local data, secrets, and generated experiment outputs should not enter images.
+data/
+results/
+container_results/
+container_results_*/
+container_audit_results/
+container_audit_results_*/
+logs/
+tmp/
+*.key
+*.pem
+*.env
+.env.*

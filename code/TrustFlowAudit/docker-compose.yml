@@ -1,0 +1,120 @@
+x-node-healthcheck: &node-healthcheck
+  test:
+    - CMD
+    - python3
+    - -c
+    - "import json,urllib.request; data=json.load(urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)); assert data.get('ok') and data.get('registered')"
+  interval: 5s
+  timeout: 3s
+  retries: 30
+  start_period: 5s
+
+services:
+  zookeeper:
+    image: zookeeper:3.9
+    environment:
+      ZOO_4LW_COMMANDS_WHITELIST: ruok,stat,mntr
+    ports:
+      - "2181:2181"
+
+  node1:
+    build: .
+    command: python3 src/chain_node.py
+    environment:
+      NODE_ID: node1
+      NODE_HOST: node1
+      NODE_PORT: "8000"
+      TRUST_SCORE: "96"
+      ZK_HOSTS: zookeeper:2181
+      REGISTER_RETRIES: "60"
+      REGISTER_RETRY_DELAY: "1"
+    depends_on:
+      - zookeeper
+    healthcheck: *node-healthcheck
+
+  node2:
+    build: .
+    command: python3 src/chain_node.py
+    environment:
+      NODE_ID: node2
+      NODE_HOST: node2
+      NODE_PORT: "8000"
+      TRUST_SCORE: "93"
+      ZK_HOSTS: zookeeper:2181
+      REGISTER_RETRIES: "60"
+      REGISTER_RETRY_DELAY: "1"
+    depends_on:
+      - zookeeper
+    healthcheck: *node-healthcheck
+
+  node3:
+    build: .
+    command: python3 src/chain_node.py
+    environment:
+      NODE_ID: node3
+      NODE_HOST: node3
+      NODE_PORT: "8000"
+      TRUST_SCORE: "91"
+      ZK_HOSTS: zookeeper:2181
+      REGISTER_RETRIES: "60"
+      REGISTER_RETRY_DELAY: "1"
+    depends_on:
+      - zookeeper
+    healthcheck: *node-healthcheck
+
+  node4:
+    build: .
+    command: python3 src/chain_node.py
+    environment:
+      NODE_ID: node4
+      NODE_HOST: node4
+      NODE_PORT: "8000"
+      TRUST_SCORE: "88"
+      ZK_HOSTS: zookeeper:2181
+      REGISTER_RETRIES: "60"
+      REGISTER_RETRY_DELAY: "1"
+    depends_on:
+      - zookeeper
+    healthcheck: *node-healthcheck
+
+  runner:
+    build: .
+    command: python3 src/consortium_runner.py --config config/consortium_experiment.json --output-dir container_results
+    environment:
+      ZK_HOSTS: zookeeper:2181
+      NODE_REGISTRY_PATH: /trustflowaudit/nodes
+    volumes:
+      - ./container_results:/app/container_results
+    depends_on:
+      zookeeper:
+        condition: service_started
+      node1:
+        condition: service_healthy
+      node2:
+        condition: service_healthy
+      node3:
+        condition: service_healthy
+      node4:
+        condition: service_healthy
+
+  audit-runner:
+    build: .
+    command: >
+      sh -c "python3 src/trust_flow_audit.py --config config/blop_simulation.json --results-dir audit_work/results --reports-dir audit_work/reports &&
+      python3 src/audit_chain_runner.py --config config/consortium_experiment.json --simulation-results audit_work/results/results.json --artifact-path audit_work/reports/BLoP复现与TrustFlowAudit优化报告.md --output-dir container_audit_results"
+    environment:
+      ZK_HOSTS: zookeeper:2181
+      NODE_REGISTRY_PATH: /trustflowaudit/nodes
+    volumes:
+      - ./container_audit_results:/app/container_audit_results
+    depends_on:
+      zookeeper:
+        condition: service_started
+      node1:
+        condition: service_healthy
+      node2:
+        condition: service_healthy
+      node3:
+        condition: service_healthy
+      node4:
+        condition: service_healthy

@@ -1,0 +1,16 @@
+services:
+  node4:
+    environment:
+      TRUST_SCORE: "62"
+
+  runner:
+    command: python3 src/consortium_runner.py --config config/consortium_experiment.json --output-dir container_results_lowtrust
+    volumes:
+      - ./container_results_lowtrust:/app/container_results_lowtrust
+
+  audit-runner:
+    command: >
+      sh -c "python3 src/trust_flow_audit.py --config config/blop_simulation.json --results-dir audit_work/results --reports-dir audit_work/reports &&
+      python3 src/audit_chain_runner.py --config config/consortium_experiment.json --simulation-results audit_work/results/results.json --artifact-path audit_work/reports/BLoP复现与TrustFlowAudit优化报告.md --output-dir container_audit_results_lowtrust"
+    volumes:
+      - ./container_audit_results_lowtrust:/app/container_audit_results_lowtrust

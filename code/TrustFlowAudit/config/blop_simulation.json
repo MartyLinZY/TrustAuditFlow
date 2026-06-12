@@ -1,0 +1,83 @@
+{
+  "seed": 20260605,
+  "months": 17,
+  "business_systems": 10,
+  "critical_hosts": 100,
+  "trusted_agents_start": 18,
+  "trusted_agents_final": 120,
+  "trust_threshold": 72.0,
+  "committee_size": 10,
+  "paper_targets": {
+    "trusted_anomaly_events": {
+      "unverified_programs": 29892,
+      "data_inconsistency_risks": 2111,
+      "unknown_programs": 217
+    },
+    "tamper_proof_events": {
+      "unfamiliarity_with_tamper_proof_systems": 189,
+      "operational_errors": 283,
+      "other_tampering_activities": 7
+    }
+  },
+  "event_risk_weights": {
+    "unverified_programs": 0.45,
+    "data_inconsistency_risks": 0.75,
+    "unknown_programs": 1.0,
+    "unfamiliarity_with_tamper_proof_systems": 0.35,
+    "operational_errors": 0.55,
+    "other_tampering_activities": 1.0
+  },
+  "evidence": {
+    "raw_event_bytes": 768,
+    "chain_digest_bytes": 96,
+    "erasure_k": 6,
+    "erasure_m": 3
+  },
+  "strategies": [
+    {
+      "name": "blop_full_pbft",
+      "label": "BLoP式全可信节点PBFT",
+      "committee_mode": "all_trusted",
+      "batch_size": 1,
+      "consensus": "pbft",
+      "erasure_evidence": false
+    },
+    {
+      "name": "batch_merkle_full_pbft",
+      "label": "全可信节点PBFT+Merkle批量存证",
+      "committee_mode": "all_trusted",
+      "batch_size": 128,
+      "consensus": "pbft",
+      "erasure_evidence": false
+    },
+    {
+      "name": "committee_pbft",
+      "label": "可信委员会PBFT",
+      "committee_mode": "top_trusted",
+      "batch_size": 1,
+      "consensus": "pbft",
+      "erasure_evidence": false
+    },
+    {
+      "name": "trustflowaudit",
+      "label": "TrustFlowAudit：可信委员会+分级批量存证+纠删码证据",
+      "committee_mode": "top_trusted",
+      "batch_size": 128,
+      "high_risk_batch_size": 8,
+      "consensus": "hotstuff",
+      "erasure_evidence": true
+    }
+  ],
+  "consensus_profiles": {
+    "pbft": {
+      "base_ms": 35.0,
+      "per_node_ms": 1.6,
+      "quadratic_ms": 0.25
+    },
+    "hotstuff": {
+      "base_ms": 28.0,
+      "per_node_ms": 1.1,
+      "quadratic_ms": 0.08
+    }
+  }
+}

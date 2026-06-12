@@ -1,0 +1,39 @@
+# macOS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local data and generated outputs
+data/
+results/
+container_results/
+container_results_*/
+container_audit_results/
+container_audit_results_*/
+logs/
+tmp/
+
+# Secrets
+*.key
+*.pem
+*.env
+.env.*
+
+# Docker / runtime
+*.log
+*.pid
