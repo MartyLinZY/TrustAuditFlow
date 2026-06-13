@@ -12,35 +12,7 @@ TrustAuditFlow includes five roles.
 
 \subsection{On-Chain and Off-Chain Boundary}
 
-The system follows an off-chain computation and on-chain anchoring design. Off chain, nodes perform sharding, erasure coding, local storage, sampled checking, recovery, and full evidence retention. On chain, the system records compact evidence: object identifiers, coding parameters, Merkle roots, batch audit summaries, recovery states, and trust-score updates.
-
-Figure~\ref{fig:architecture} illustrates this separation. The chain is not used as a high-frequency proof executor. It serves as a trusted timeline, a state anchor, and an accountability ledger.
-
-\begin{figure}[t]
-\centering
-\begin{tikzpicture}[
-  node distance=0.55cm,
-  box/.style={draw, rounded corners, align=center, minimum width=2.0cm, minimum height=0.65cm, font=\footnotesize},
-  wide/.style={draw, rounded corners, align=center, minimum width=6.8cm, minimum height=0.75cm, font=\footnotesize},
-  arrow/.style={-{Latex[length=2mm]}, thick}
-]
-\node[box] (owner) {Data owner};
-\node[box, right=0.5cm of owner] (storage) {Off-chain\\storage};
-\node[box, right=0.5cm of storage] (auditor) {Auditor};
-\node[wide, below=0.65cm of storage] (offchain) {Off-chain layer: sharding, checking, recovery, evidence storage};
-\node[wide, below=0.65cm of offchain] (onchain) {On-chain layer: Merkle roots, audit summaries, recovery states};
-\node[box, below=0.65cm of onchain] (committee) {Audit committee};
-\draw[arrow] (owner) -- (storage);
-\draw[arrow] (storage) -- (auditor);
-\draw[arrow] (owner) -- (offchain);
-\draw[arrow] (storage) -- (offchain);
-\draw[arrow] (auditor) -- (offchain);
-\draw[arrow] (offchain) -- (onchain);
-\draw[arrow] (committee) -- (onchain);
-\end{tikzpicture}
-\caption{TrustAuditFlow architecture: off-chain verification and on-chain anchoring.}
-\label{fig:architecture}
-\end{figure}
+The system follows an off-chain computation and on-chain anchoring design. Off chain, nodes perform sharding, erasure coding, local storage, sampled checking, recovery, and full evidence retention. On chain, the system records compact evidence: object identifiers, coding parameters, Merkle roots, batch audit summaries, recovery states, and trust-score updates. The chain is not used as a high-frequency proof executor. It serves as a trusted timeline, a state anchor, and an accountability ledger.
 
 \subsection{Objects and Commitments}
 
