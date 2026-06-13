@@ -26,28 +26,12 @@ This relationship is important for the paper's scope. TrustAuditFlow is not a we
 
 Figure~\ref{fig:workflow} shows the closed audit-recovery workflow. The data object is first sharded and erasure-coded. The system then computes shard hashes, builds a Merkle root, and anchors the object commitment on chain. Auditors sample off-chain shards according to the policy. If a challenged shard is missing, stale, or inconsistent with its commitment, the system records an anomaly and checks whether enough valid shards remain for recovery. If recovery succeeds, the object commitment and the responsible node state are updated. If recovery is impossible or the event is high risk, the event falls back to full-node confirmation or external arbitration.
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
-\begin{tikzpicture}[
-  node distance=0.37cm,
-  flowstep/.style={draw, rounded corners, align=center, minimum width=6.7cm, minimum height=0.48cm, font=\scriptsize},
-  arrow/.style={-{Latex[length=1.8mm]}, thick}
-]
-\node[flowstep] (s1) {Shard storage and erasure coding};
-\node[flowstep, below=of s1] (s2) {Merkle commitment and on-chain object state};
-\node[flowstep, below=of s2] (s3) {Policy-driven sampled audit challenge};
-\node[flowstep, below=of s3] (s4) {Anomaly detection and recovery threshold check};
-\node[flowstep, below=of s4] (s5) {Shard recovery and commitment update};
-\node[flowstep, below=of s5] (s6) {Committee confirmation or full-node fallback};
-\draw[arrow] (s1) -- (s2);
-\draw[arrow] (s2) -- (s3);
-\draw[arrow] (s3) -- (s4);
-\draw[arrow] (s4) -- (s5);
-\draw[arrow] (s5) -- (s6);
-\end{tikzpicture}
+\includegraphics[width=\textwidth]{figures/trustauditflow_workflow.pdf}
 \caption{Closed audit-recovery workflow.}
 \label{fig:workflow}
-\end{figure}
+\end{figure*}
 
 \subsection{Trust Score and Committee Selection}
 

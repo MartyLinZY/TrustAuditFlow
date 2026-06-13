@@ -2,7 +2,7 @@
 
 \subsection{BLoP Baseline and Extension Target}
 
-This paper uses BLoP as the baseline trusted audit model. BLoP provides a full trust chain through trusted computing, trusted agents, event monitoring, and PBFT-style confirmation. Its natural operating mode is full-node confirmation: all eligible trusted nodes participate in confirming critical audit events. This is an appropriate default for high-risk data use, strong accountability requirements, and low-frequency events where assurance matters more than cost.
+This paper uses BLoP as the baseline trusted audit model~\cite{Zhang2025BloPAT}. BLoP provides a full trust chain through trusted computing, trusted agents, event monitoring, and PBFT-style confirmation. Its natural operating mode is full-node confirmation: all eligible trusted nodes participate in confirming critical audit events. This is an appropriate default for high-risk data use, strong accountability requirements, and low-frequency events where assurance matters more than cost.
 
 The extension target is different. In data circulation, routine audit events may be generated continuously by data connectors, storage nodes, computation tasks, and monitoring agents. If all routine events are handled by the same full-node path, the chain records and confirmation messages may grow faster than the value of the individual events. The research question is therefore:
 
