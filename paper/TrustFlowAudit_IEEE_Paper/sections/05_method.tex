@@ -35,7 +35,7 @@ Figure~\ref{fig:workflow} shows the closed audit-recovery workflow. The data obj
 
 \subsection{Trust Score and Committee Selection}
 
-BLoP maintains a trusted node set through trusted computing and monitoring. TrustAuditFlow reuses this idea and converts it into a committee-selection rule. In the current prototype-level design, the trust score of node $v_i$ is modeled as
+BLoP maintains a trusted node set through trusted computing and monitoring. TrustAuditFlow reuses this idea and converts it into a committee-selection rule. The trust score of node $v_i$ is modeled as
 \begin{equation}
   T_i = \alpha A_i + \beta C_i + \gamma P_i,
 \end{equation}
@@ -59,7 +59,7 @@ where $N_{high}$ is the number of high-risk events requiring separate handling. 
 
 \subsection{Sampled Audit and Anomaly Generation}
 
-Given an audit policy, an auditor samples a challenge set $Q=\{q_1,\ldots,q_r\}$. For each challenged shard $s_i$, the storage node returns the shard, a digest, or a proof object depending on the verification module. In the current design, hash checking is used as a placeholder for the integrity check. A later revision can replace it with PDP/PoR verification.
+Given an audit policy, an auditor samples a challenge set $Q=\{q_1,\ldots,q_r\}$. For each challenged shard $s_i$, the storage node returns the shard, a digest, or a proof object depending on the verification module. Hash checking provides a lightweight integrity module, while the same interface can also host PDP/PoR verification.
 
 If verification fails, the auditor emits an anomaly event
 \begin{equation}

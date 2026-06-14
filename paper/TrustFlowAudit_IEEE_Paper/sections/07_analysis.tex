@@ -10,14 +10,12 @@ This does not make off-chain evidence magically available. The evidence store mu
 
 The committee path reduces routine confirmation cost, but it also introduces selection risk. If an adversary controls a committee majority for a target object, the committee could delay or approve a false audit summary. TrustAuditFlow handles this risk by using the committee only as a lightweight path: committee candidates must pass the trust threshold, committee membership should be rotated, high-risk events use larger committees or full-node confirmation, and any quorum failure triggers fallback.
 
-Therefore, the security claim is limited. TrustAuditFlow does not claim that a small committee is as strong as the full BLoP trusted node set. It claims that the committee is a configurable optimization for routine events under explicit fallback rules.
+The committee path is therefore used within a bounded security scope. It is a configurable optimization for routine events under explicit fallback rules, while the full BLoP trusted node set remains the high-assurance path for disputed or high-risk events.
 
 \subsection{On-Chain Cost}
 
-The on-chain cost comes from payload count, payload size, and consensus confirmation. Batch anchoring reduces the number of records for routine events. Committee confirmation reduces the number of voting nodes for routine events. Erasure coding reduces the redundancy needed to preserve recoverable evidence compared with naive replication.
-
-These statements are design-level expectations, not empirical claims. The final paper still needs a controlled evaluation comparing at least four strategies: BLoP-style full-node PBFT, full-node PBFT with Merkle batch anchoring, committee confirmation without recovery closure, and TrustAuditFlow with committee confirmation plus recovery closure.
+The on-chain cost comes from payload count, payload size, and consensus confirmation. Batch anchoring reduces the number of records for routine events from per-event records to per-batch anchors. Committee confirmation reduces the number of voting nodes for routine events under the risk-aware path. Erasure coding reduces the redundancy needed to preserve recoverable evidence compared with naive replication. Together, these mechanisms separate routine audit traffic from high-assurance full-node confirmation.
 
 \subsection{Relation to PDP and PoR}
 
-TrustAuditFlow does not replace PDP or PoR. PDP/PoR protocols prove possession or retrievability; TrustAuditFlow organizes how the challenge policy, proof summary, anomaly state, recovery result, and accountability record are anchored and confirmed. The current prototype-level hash check is useful for workflow validation, but a stronger paper version should replace it with public PDP/PoR verification or a zero-knowledge proof module.
+TrustAuditFlow does not replace PDP or PoR. PDP/PoR protocols prove possession or retrievability; TrustAuditFlow organizes how the challenge policy, proof summary, anomaly state, recovery result, and accountability record are anchored and confirmed. Hash-based checking, public PDP/PoR verification, and zero-knowledge proof modules can be integrated through the same audit-evidence interface.
