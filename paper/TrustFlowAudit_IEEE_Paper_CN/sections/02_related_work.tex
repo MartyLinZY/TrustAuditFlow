@@ -1,0 +1,22 @@
+\section{相关工作}
+
+\subsection{PDP、PoR 与公开审计}
+
+PDP 和 PoR 是远程数据完整性校验的基础。Ateniese 等提出 PDP，使客户端无需下载完整文件即可验证外包数据是否仍被持有~\cite{ateniese_provable_2007}。Juels 和 Kaliski 提出 PoR，强调可恢复性而不仅是数据持有~\cite{juels_pors_2007}。Shacham 和 Waters 进一步降低证明大小并支持公开验证~\cite{shacham_compact_2013}。动态 PDP 将该方向扩展到经过认证的插入、删除和修改~\cite{erway_dynamic_2015}。
+
+这些协议回答了如何以较低通信成本校验远程数据的问题。但它们本身并不提供完整的审计治理层。在数据流通中，审计请求、响应时间、校验结果、恢复动作和责任分配也需要以防篡改方式记录。TrustAuditFlow 因此将 PDP/PoR 视为候选链下证明模块，并关注生成的证据如何被锚定、确认并与恢复过程连接。
+
+\subsection{基于区块链的审计与智能合约}
+
+基于区块链的审计利用追加式账本约束审计过程。Xue 等研究了通过区块链对抗恶意审计者的基于身份的公开审计~\cite{xue_identity-based_2019}。Zhang 等使用不可预测链上信息生成挑战并记录审计者行为，以对抗拖延审计~\cite{zhang_blockchain-based_2021}。Dredas 通过智能合约实现挑战生成、押金、惩罚和审计记录~\cite{fan_dredas_2020}。CBPIV 使用联盟链和 PBFT 共识记录物联网云存储中的公开完整性校验~\cite{lin_consortium_2022}。
+
+这些系统支持链下证明生成和链上证据锚定的一般模式。然而，当审计事件频繁发生时，将每个挑战和细粒度结果逐条提交到链上可能带来不必要的吞吐压力。此外，许多系统停留在完整性校验的通过或失败状态，没有充分连接审计失败、恢复、问责和未来节点选择。
+
+\subsection{纠删码与分布式存储可靠性}
+
+只能检测损坏而不能触发恢复的完整性审计，其运维价值有限。纠删码相比朴素副本提供了更低冗余的容错能力~\cite{balaji_erasure_2018}。BFT-Store 将 Reed-Solomon 编码与 BFT/PBFT 假设结合，降低许可链存储中的全复制负担~\cite{qi_reliable_2021}。PartitionChain 面向许可链探索可靠存储分区、聚合和信誉机制~\cite{du_partitionchain_2023}。这些系统启发了 TrustAuditFlow 的恢复组件：审计失败不仅应更新校验状态，还应更新可恢复状态。
+
+\subsection{联盟共识与可信计算}
+
+数据流通通常涉及已知机构和显式访问控制，因此联盟链比开放式工作量证明链更适合作为审计记录层。PBFT 是状态机复制中的经典拜占庭容错协议~\cite{castro_practical_2002}。HotStuff 改进了视图切换复杂度和响应性~\cite{yin_hotstuff_2019}，而 DAG-BFT 协议则将数据传播与排序分离以支持高吞吐场景~\cite{danezis_narwhal_2022,spiegelman_bullshark_2022}。BLoP 融合区块链、可信计算和隐私保护计算，并在联盟链场景下使用 PBFT 风格共识作为低能耗替代方案~\cite{Zhang2025BloPAT}。TrustAuditFlow 建立在这一全节点模型之上，增加风险感知的轻量路径，而不是替代 BLoP 基线。
+
